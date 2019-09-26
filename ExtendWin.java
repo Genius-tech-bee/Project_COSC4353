@@ -6,9 +6,12 @@ import java.io.*;
 import java.awt.event.*;
 import javax.swing.plaf.metal.*;
 import javax.swing.UIManager.*;
-import javax.swing.JFrame;
 import javax.swing.text.*;
+import javax.swing.text.DocumentFilter.FilterBypass;
 import javax.swing.tree.*;
+
+//import editorP.editor2.customDocumentFilter;
+
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -16,25 +19,30 @@ import java.util.regex.Pattern;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 
-
-class editor2 extends JFrame implements ActionListener{
+class ExtendWin extends JFrame implements ActionListener{
     
     JTextPane text;
     Document doc;
     JFrame frame;
     JScrollPane scroll_bar;
     JButton b1, b2, b3;
-    FileExplorer panel;
-    boolean Opened_File = false;
-    
+    File O_File;
+
     String direct = "";
     String project = "";
     String file = "";
     File curFile;
-            
-    editor2()
-    {
-        frame = new JFrame("editor");
+
+    ExtendWin(File file){
+        this.O_File = file;
+        this.curFile = file;
+        String fileName = O_File.toString();
+        int idex = fileName.lastIndexOf("\\");
+        String delfileName = fileName.substring(0, idex + 1);
+        fileName = fileName.replace(delfileName, "");
+        System.out.println(fileName);
+
+        frame = new JFrame(fileName);
 
         Font f = new Font("sans-serif", Font.PLAIN, 25);
         UIManager.put("Menu.font", f);
@@ -47,14 +55,10 @@ class editor2 extends JFrame implements ActionListener{
         doc = text.getDocument();
         doc.addDocumentListener(new textareaMonitor());
         scroll_bar = new JScrollPane();
-        
+
         JMenuBar menubar = new JMenuBar();
 
         JMenu file_menu = new JMenu("File");
-        JMenuItem fm_newProject = new JMenuItem("New Project");
-        JMenuItem fm_openProject = new JMenuItem("Open Project");
-        JMenuItem fm_saveProject = new JMenuItem("Save Project");
-        JMenuItem fm_closeProject = new JMenuItem("Close Project");
         JMenuItem fm_newFile = new JMenuItem("New File");
         JMenuItem fm_openFile = new JMenuItem("Open File");
         JMenuItem fm_saveFile = new JMenuItem("Save File");
@@ -62,10 +66,6 @@ class editor2 extends JFrame implements ActionListener{
         JMenuItem fm_deleteFile = new JMenuItem("Delete File");
         JMenuItem fm_exit = new JMenuItem("Exit");
 
-        fm_newProject.addActionListener(this);
-        fm_openProject.addActionListener(this);
-        fm_saveProject.addActionListener(this);
-        fm_closeProject.addActionListener(this);
         fm_newFile.addActionListener(this);
         fm_openFile.addActionListener(this);
         fm_saveFile.addActionListener(this);
@@ -73,11 +73,6 @@ class editor2 extends JFrame implements ActionListener{
         fm_deleteFile.addActionListener(this);
         fm_exit.addActionListener(this);
 
-        file_menu.add(fm_newProject);
-        file_menu.add(fm_openProject);
-        file_menu.add(fm_saveProject);
-        file_menu.add(fm_closeProject);
-        file_menu.addSeparator();
         file_menu.add(fm_newFile);
         file_menu.add(fm_openFile);
         file_menu.add(fm_saveFile);
@@ -109,39 +104,52 @@ class editor2 extends JFrame implements ActionListener{
         edit_menu.add(em_find);
 
         JMenu proj_menu = new JMenu("Project");
-        JMenuItem pm_debug_pro = new JMenuItem("Debug Project");
-        JMenuItem pm_debug_fi = new JMenuItem("Debug File");
+        JMenuItem pm_debug = new JMenuItem("Debug");
         JMenuItem pm_run = new JMenuItem("Run");
 
-        pm_debug_pro.addActionListener(this);
-        pm_debug_fi.addActionListener(this);
+        pm_debug.addActionListener(this);
         pm_run.addActionListener(this);
 
-        proj_menu.add(pm_debug_pro);
-        proj_menu.add(pm_debug_fi);
+        proj_menu.add(pm_debug);
         proj_menu.add(pm_run);
 
         menubar.add(file_menu);
         menubar.add(edit_menu);
         menubar.add(proj_menu);
 
-        frame.setDefaultCloseOperation(EXIT_ON_CLOSE);
+        //frame.setDefaultCloseOperation(EXIT_ON_CLOSE);
         frame.setJMenuBar(menubar);
-        panel = new FileExplorer();
-        panel.getPreferredSize();
         frame.setLayout(new BorderLayout());
-        frame.add(panel,BorderLayout.SOUTH);
         frame.add(text);
         frame.add(scroll_bar);
         frame.setSize(1500,1200);
         frame.setVisible(true);
 
         text.setFont(text.getFont().deriveFont(28f));
+        try {
+            String line ="", all_line = "";
+
+            FileReader fr = new FileReader(O_File);
+            BufferedReader br = new BufferedReader(fr);
+
+            all_line = br.readLine();
+
+            while ((line = br.readLine()) != null){
+                all_line = all_line + "\n" + line;
+            }
+            br.close();
+            text.setText(all_line);
+            scroll_bar.setViewportView(text);
+            
+            String dir = O_File.getAbsolutePath();
+            direct = dir;
+        }   
+        catch (Exception evt){
+            JOptionPane.showMessageDialog(frame, evt.getMessage());
+        }
 
         //frame.addWindowListener(new WindowCloser());
     }
-    
-    
 
     public void actionPerformed(ActionEvent e){
         String s = e.getActionCommand();
@@ -157,103 +165,14 @@ class editor2 extends JFrame implements ActionListener{
         }
         else if (s.equals("Exit")){
             frame.dispose();
-            System.exit(0);
-        }
-        else if (s.equals("Close Project")) {
-
-            if (project != "") {
-
-                project = "";
-                Opened_File = false;
-                text.setText("");
-                text.setEditable(false);
-
-                JOptionPane.showMessageDialog(frame, "Project Closed");
-
-                panel.updateList(new File(""));
-            } 
-            else {
-                JOptionPane.showMessageDialog(frame, "No project is open.");
-            }
-
-        }
-        else if (s.equals("Open Project")) {
-
-            if (project == "") {
-
-                JFileChooser choose_file = new JFileChooser("f:");
-                choose_file.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-                choose_file.setPreferredSize(new Dimension(900,700));
-                int r = choose_file.showOpenDialog(null);
-                String dir = "";
-                if (r == JFileChooser.APPROVE_OPTION){
-                    File file = new File(choose_file.getSelectedFile().getAbsolutePath());
-
-                    dir = file.getAbsolutePath();
-
-                    panel.updateList(file);
-
-                    JOptionPane.showMessageDialog(frame, "Currently in Project Directory: " + dir);
-
-                    project = dir;
-                    Opened_File = false;
-                    text.setEditable(true);
-                }
-                else
-                    JOptionPane.showMessageDialog(frame, "No File Is Opened");
-            }
-            else {
-                JOptionPane.showMessageDialog(frame, "Cannot open project.  Please close current project");
-            }
-        }
-        else if (s.equals("Save Project")) {
-            ArrayList<ExtendWin> exWin = new ArrayList<ExtendWin>();
-            exWin = panel.getHash();
-            if (exWin.size() > 0){
-                for (int i = 0; i < exWin.size(); i++){
-                    exWin.get(i).SaveFile();
-                }
-                JOptionPane.showMessageDialog(frame, "All Project Files Saved");
-            }
-        }
-        else if (s.equals("New Project")) {
-
-            if (project == "") {
-
-                JFileChooser choose_file = new JFileChooser("f:");
-                choose_file.setPreferredSize(new Dimension(900,700));
-                int r = choose_file.showSaveDialog(null);
-                String dir = "";
-                if (r == JFileChooser.APPROVE_OPTION){
-                    File file = new File(choose_file.getSelectedFile().getAbsolutePath());
-                    try{
-
-                        file.mkdir();
-            
-                        dir = file.getAbsolutePath();
-
-                        JOptionPane.showMessageDialog(frame, "New Project Created");
-                        Opened_File = false;
-                        panel.updateList(file);
-                    }
-                    catch (Exception evt){
-                        JOptionPane.showMessageDialog(frame, evt.getMessage()); 
-                    }   
-                    text.setEditable(true);
-                    project = dir;
-                }
-                else
-                    JOptionPane.showMessageDialog(frame, "No Project Is Saved");
-            }
-            else {
-                JOptionPane.showMessageDialog(frame, "Cannot start a new project. Please close the current project.");
-            }
+            //System.exit(0);
         }
         else if (s.equals("Open File")){
 
             JFileChooser choose_file = new JFileChooser(direct);
             choose_file.setPreferredSize(new Dimension(900,700));
             int r = choose_file.showOpenDialog(null);
+            String dir = "";
             if (r == JFileChooser.APPROVE_OPTION){
                 File file = new File(choose_file.getSelectedFile().getAbsolutePath());
 
@@ -270,21 +189,22 @@ class editor2 extends JFrame implements ActionListener{
                     }
                     br.close();
                     text.setText(all_line);
-                    text.setEditable(true);
                     scroll_bar.setViewportView(text);
-                    direct = file.toString();
+                    dir = file.getAbsolutePath();
                     curFile = file;
-                    Opened_File = true;
-                    File curDir = new File(file.getParent());
 
-                    panel.updateList(curDir);
+                    String fileName = file.toString();
+                    int idex = fileName.lastIndexOf("\\");
+                    String delfileName = fileName.substring(0, idex + 1);
+                    fileName = fileName.replace(delfileName, "");
 
-                    curFile = file;
-                    
+                    frame.setTitle(fileName);
                 }   
                 catch (Exception evt){
                     //JOptionPane.showMessageDialog(frame, evt.getMessage());
                 }
+
+                direct = dir;
             }
             else
                 JOptionPane.showMessageDialog(frame, "No File Is Opened");
@@ -302,10 +222,6 @@ class editor2 extends JFrame implements ActionListener{
                     w.write(text.getText());
                     w.flush();
                     w.close();
-
-                    File curDir = new File(file.getParent());
-
-                    panel.updateList(curDir);
 
                     direct = file.toString();
 
@@ -336,13 +252,16 @@ class editor2 extends JFrame implements ActionListener{
                     w.close();
                     dir = file.getAbsolutePath();
 
-                    File curDir = new File(file.getParent());
-
-                    panel.updateList(curDir);
-
                     direct = file.toString();
 
                     curFile = file;
+
+                    String fileName = file.toString();
+                    int idex = fileName.lastIndexOf("\\");
+                    String delfileName = fileName.substring(0, idex + 1);
+                    fileName = fileName.replace(delfileName, "");
+
+                    frame.setTitle(fileName);
                 }
                 catch (Exception evt){
                     //JOptionPane.showMessageDialog(frame, evt.getMessage()); 
@@ -359,6 +278,7 @@ class editor2 extends JFrame implements ActionListener{
                 text.setText(""); 
                 JOptionPane.showMessageDialog(frame, "File Deleted");
                 curFile = null;
+                frame.setTitle("");
             }
             else
             {
@@ -370,97 +290,81 @@ class editor2 extends JFrame implements ActionListener{
             JFileChooser choose_file = new JFileChooser(direct);
             choose_file.setPreferredSize(new Dimension(900,700));
             int r = choose_file.showSaveDialog(null);
+            String dir = "";
             if (r == JFileChooser.APPROVE_OPTION){
                 File file = new File(choose_file.getSelectedFile().getAbsolutePath());
                 try{
                     FileWriter wr = new FileWriter(file, false);
-                    File curDir = new File(file.getParent());
-
-                    panel.updateList(curDir);
+                    BufferedWriter w = new BufferedWriter(wr);
+                    w.flush();
+                    w.close();
+                    dir = file.getAbsolutePath();
 
                     direct = file.toString();
 
                     curFile = file;
-                    Opened_File = true;
+
                     text.setText("");     
-                    text.setEditable(true);
                     scroll_bar.setViewportView(text);
+
+                    String fileName = file.toString();
+                    int idex = fileName.lastIndexOf("\\");
+                    String delfileName = fileName.substring(0, idex + 1);
+                    fileName = fileName.replace(delfileName, "");
+
+                    frame.setTitle(fileName);
                 }
                 catch (Exception evt){
-                    //JOptionPane.showMessageDialog(frame, evt.getMessage()); 
+                    JOptionPane.showMessageDialog(frame, evt.getMessage()); 
                 }
             }
             else
                 JOptionPane.showMessageDialog(frame, "Unable to Create New File");
             
         }
-        else if (s.equals("Debug Project")){
-           
+        else if (s.equals("Debug")){
+
             try{
-                if(project != "") {
-                    String file_dir = project;
-                    String command = String.format("cmd /c start cmd.exe /K \"pushd %s && javac *.java\"", file_dir);
-                    Runtime.getRuntime().exec(command);
-                    JOptionPane.showMessageDialog(frame, "All Files in Project Folder Debugged");
-                }
-                
+                int file_i = direct.lastIndexOf("\\") + 1;
+                String file_name = direct.substring(file_i);
+                String file_dir = direct.substring(0, file_i);
+                String command = String.format("cmd /c start cmd.exe /K \"pushd %s && javac %s\"", file_dir, file_name);
+                Runtime.getRuntime().exec(command);
             }
             catch (Exception evt){ 
                 evt.printStackTrace(); 
             } 
             
         }
-        else if (s.equals("Debug File")){
-            try{
-                if (Opened_File == true){
-                    System.out.println(direct);
-                    int file_i = direct.lastIndexOf("\\") + 1;
-                    String file_name = direct.substring(file_i);
-                    String file_dir = direct.substring(0, file_i);
-                    String command = String.format("cmd /c start cmd.exe /K \"pushd %s && javac %s\"", file_dir, file_name);
-                    Runtime.getRuntime().exec(command);
-                    String outInfo = "File " + file_name + " Debugged";
-                    JOptionPane.showMessageDialog(frame, outInfo);
-                }
-                
-            }
-            catch (Exception evt){ 
-                evt.printStackTrace(); 
-            } 
-        }
         else if (s.equals("Run")){
             try{
-                if (Opened_File == true){
-                    int file_ie = direct.indexOf(".java");
-                    int file_i = direct.lastIndexOf("\\") + 1;
-                    String file_name = direct.substring(file_i, file_ie);
-                    String file_dir = direct.substring(0, file_i);
-                    String command = String.format("cmd /c start cmd.exe /K \"pushd %s && java %s\"", file_dir, file_name);
-                    Runtime.getRuntime().exec(command);
-                }
+                int file_ie = direct.indexOf(".java");
+                int file_i = direct.lastIndexOf("\\") + 1;
+                String file_name = direct.substring(file_i, file_ie);
+                String file_dir = direct.substring(0, file_i);
+                String command = String.format("cmd /c start cmd.exe /K \"pushd %s && java %s\"", file_dir, file_name);
+                Runtime.getRuntime().exec(command);
             }
             catch (Exception evt){ 
                 evt.printStackTrace(); 
             } 
         }
     }
-    
-    public static void main(String[] argv){
 
-        try {
-            for (LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (Exception e) {
-            // If Nimbus is not available, you can set the GUI to another look and feel.
+    public void SaveFile(){
+        File file = O_File;
+        try{
+            FileWriter wr = new FileWriter(file, false);
+            BufferedWriter w = new BufferedWriter(wr);
+
+            w.write(text.getText());
+            w.flush();
+            w.close();
         }
-
-        editor2 e = new editor2();
+        catch (Exception evt){
+            JOptionPane.showMessageDialog(frame, evt.getMessage()); 
+        }
     }
-    
     final class customDocumentFilter extends DocumentFilter
     {
     	
@@ -524,11 +428,8 @@ class editor2 extends JFrame implements ActionListener{
         	// Clears existing styles
         	styledDocument.setCharacterAttributes(0, text.getText().length(), blackAttributeSet, true);
         	
-        	String temp = text.getText();
-        	
-        	temp = temp.replace("\n", " ").replace("\r", "");
-        	
-        	
+            String temp = text.getText();
+            temp = temp.replace("\n", " ");
         	char [] tempCharArray = temp.toCharArray();
         	
         	// Look for matching substrings and highlight them
@@ -536,14 +437,7 @@ class editor2 extends JFrame implements ActionListener{
         	Matcher matcherQuotes = patternQuotes.matcher(temp);
         	
         	while (matcherBool.find())
-        		{
-        		styledDocument.setCharacterAttributes(matcherBool.start(), matcherBool.end() - matcherBool.start(), booleanAttributeSet, false);
-        		
-        		System.out.println("String is : " + temp.substring(matcherBool.start(), matcherBool.end()));
-        		
-        		System.out.println("Matcher Boolean start location : " + matcherBool.start());
-        		System.out.println("Matcher Boolean end location : " + matcherBool.end());
-        		}
+        		styledDocument.setCharacterAttributes(matcherBool.start(), matcherBool.end()- matcherBool.start(), booleanAttributeSet, false);
         	
         	while (matcherQuotes.find())
         		styledDocument.setCharacterAttributes(matcherQuotes.start(), matcherQuotes.end() - matcherQuotes.start(), quoteAttributeSet, false);;
@@ -551,7 +445,6 @@ class editor2 extends JFrame implements ActionListener{
         	
         	for (int i = 0; i < tempCharArray.length; i++)
         	{
-        		
         		switch(tempCharArray[i])
         		{
         		case '+':
@@ -559,6 +452,7 @@ class editor2 extends JFrame implements ActionListener{
         		case '*':
         		case '/':
         		case '%':
+        			System.out.println(i);
         			styledDocument.setCharacterAttributes(i ,1, arithmeticAttributeSet, false);
         			
         		}
@@ -586,6 +480,3 @@ class editor2 extends JFrame implements ActionListener{
         }
     }
 }
-
-
-  

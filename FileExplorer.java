@@ -1,3 +1,5 @@
+//package editorP;
+
 import java.awt.*;
 import javax.swing.*;
 import java.io.*;
@@ -15,6 +17,8 @@ class FileExplorer extends JPanel implements TreeSelectionListener {
     JTree fileTree;
     DefaultMutableTreeNode root;
     JScrollPane pane;
+    File dir;
+    ArrayList<ExtendWin> hashWin = new ArrayList<ExtendWin>();
     public FileExplorer() {
       root = new DefaultMutableTreeNode("root", true);
       getList(root, new File(""));
@@ -41,6 +45,7 @@ class FileExplorer extends JPanel implements TreeSelectionListener {
     //This method is useful only when the selection model allows a single selection.
         DefaultMutableTreeNode node = (DefaultMutableTreeNode)
                         fileTree.getLastSelectedPathComponent();
+                        
         System.out.println(node);
 
         TreePath tp = e.getNewLeadSelectionPath();
@@ -48,12 +53,26 @@ class FileExplorer extends JPanel implements TreeSelectionListener {
         if (node == null)
         //Nothing is selected.     
             return;
-    
-        //Object nodeInfo = node.getUserObject();
-        //fileTree.getName().endsWith(".txt")
-        if (tp.toString().endsWith(".txt]")) {
+        
+        String direct = tp.toString();
+        String d = direct.replace("[root, ", "");
+        d = d.replace(", ",",");
+        d = d.replace("]","");
+        d = d.replace(",","\\");
+        int subIn = d.indexOf("\\");
+        String delSub = d.substring(0, subIn);
+        d = d.replace(delSub, "");
+        String temp = dir.toString();
+        temp = temp + d;
+
+        if (tp.toString().endsWith(".txt]") || tp.toString().endsWith(".java]")) {
             JFrame frame = new JFrame("Path Selected");
-                JOptionPane.showMessageDialog(frame, "TEXT FILE");
+            File redir = new File(temp);
+            ExtendWin window = new ExtendWin(redir);
+            hashWin.add(window);
+                //System.out.println(redir);
+                //JOptionPane.showMessageDialog(frame, "TEXT FILE");
+
         } else {
                 JFrame frame = new JFrame("Path Selected");
                 JOptionPane.showMessageDialog(frame, node.getPath());
@@ -86,43 +105,29 @@ class FileExplorer extends JPanel implements TreeSelectionListener {
 
     public void updateList(File file)
     {
-    removeAll();
-    root = new DefaultMutableTreeNode("root", true);
-    getList(root, file);
-    setLayout(new BorderLayout());
+        dir = file;
+        removeAll();
+        root = new DefaultMutableTreeNode("root", true);
+        getList(root, file);
+        setLayout(new BorderLayout());
 
-    fileTree = new JTree(root);
-    fileTree.setRootVisible(false);
-    final Font currentFont = fileTree.getFont();
-    final Font bigFont = new Font(currentFont.getName(), currentFont.getStyle(), currentFont.getSize() + 12);
-    fileTree.setFont(bigFont);
-    pane = new JScrollPane((JTree)fileTree);
-    add(pane,"Center"); 
-    //Where the tree is initialized:
-    fileTree.getSelectionModel().setSelectionMode
-    (TreeSelectionModel.SINGLE_TREE_SELECTION);
+        fileTree = new JTree(root);
+        fileTree.setRootVisible(false);
+        final Font currentFont = fileTree.getFont();
+        final Font bigFont = new Font(currentFont.getName(), currentFont.getStyle(), currentFont.getSize() + 12);
+        fileTree.setFont(bigFont);
+        pane = new JScrollPane((JTree)fileTree);
+        add(pane,"Center"); 
+        fileTree.getSelectionModel().setSelectionMode
+        (TreeSelectionModel.SINGLE_TREE_SELECTION);
 
-    //Listen for when the selection changes.
-    fileTree.addTreeSelectionListener(this);
-    revalidate();
-    repaint(); 
+        //Listen for when the selection changes.
+        fileTree.addTreeSelectionListener(this);
+        revalidate();
+        repaint(); 
     }
 
-    public class FileNode {
-
-        private File file;
-
-        public FileNode(File file) {
-            this.file = file;
-        }
-
-        public String toString() {
-            String name = file.getName();
-            if (name.equals("")) {
-                return file.getAbsolutePath();
-            } else {
-                return name;
-            }
-        }
+    public ArrayList<ExtendWin> getHash(){
+        return hashWin;
     }
 }
