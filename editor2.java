@@ -3,6 +3,9 @@
 import java.awt.*;
 import javax.swing.*;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.awt.event.*;
 import javax.swing.plaf.metal.*;
 import javax.swing.UIManager.*;
@@ -10,15 +13,83 @@ import javax.swing.JFrame;
 import javax.swing.text.*;
 import javax.swing.tree.*;
 import java.util.*;
+import java.util.Timer;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
+import javax.swing.JSplitPane;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
-
+import java.util.concurrent.*;
 
 class editor2 extends JFrame implements ActionListener{
+	
+	// Helper functions
+	/*
+	 * @param - File folder of the project and file contents Holder ArrayList
+	 * 
+	 * Functionality - returns an ArrayList of all the contents of the project
+	 * 
+	 */
+	
+	private ArrayList<String> storeFilesForFolder (final File folder, ArrayList<String> projectText)
+	{
+		for (final File fileEntry : folder.listFiles())
+		{
+			if (fileEntry.isDirectory())
+				projectText = storeFilesForFolder(fileEntry, projectText);
+			// Read the text from each file
+			else
+			{
+				String absolutePath = fileEntry.getAbsolutePath();
+				File file = new File(absolutePath);
+				
+				try 
+				{
+					BufferedReader br = new BufferedReader(new FileReader(file));
+					String line;
+					String fileContents = "";
+					
+					while((line = br.readLine()) != null)
+					{
+						fileContents += line;
+					}
+					
+					projectText.add(fileContents);
+				} 
+				catch (FileNotFoundException e) 
+				{
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}
+		return projectText;
+	}
+	
+	private void keyWordsProjectHelper(ArrayList<String> projectText)
+	{
+		for (String fileContent : projectText)
+		{
+			String [] fileContentArray = fileContent.split("\\s+");
+			
+			// Iterate through the tempArray contents and update the keywords
+			for (String toCheck : fileContentArray)
+			{
+				int index = Arrays.binarySearch(keywords, toCheck);
+				if (index >= 0)
+					keywordsCountProject[index] += 1;
+			}
+		}
+		
+	}
     
+	statsFrame sf;
+	statsFrame sf_Project;
+	ArrayList <String> projectText;
     JTextPane text;
     Document doc;
     JFrame frame;
@@ -26,12 +97,26 @@ class editor2 extends JFrame implements ActionListener{
     JButton b1, b2, b3;
     FileExplorer panel;
     boolean Opened_File = false;
+    JSplitPane jSplitPane1;
+    
+    static final String keywords[] = { "abstract", "assert", "boolean",
+            "break", "byte", "case", "catch", "char", "class", "const",
+            "continue", "default", "do", "double", "else", "extends", "false",
+            "final", "finally", "float", "for", "goto", "if", "implements",
+            "import", "instanceof", "int", "interface", "long", "native",
+            "new", "null", "package", "private", "protected", "public",
+            "return", "short", "static", "strictfp", "super", "switch",
+            "synchronized", "this", "throw", "throws", "transient", "true",
+            "try", "void", "volatile", "while" };
+    static int keywordsCount[] = new int [keywords.length];
+    static int keywordsCountProject[] = new int [keywords.length];
+    static boolean change = false;
     
     String direct = "";
     String project = "";
     String file = "";
     File curFile;
-            
+    
     editor2()
     {
         frame = new JFrame("editor");
@@ -43,10 +128,10 @@ class editor2 extends JFrame implements ActionListener{
         javax.swing.plaf.FontUIResource(f));
 
         text = new JTextPane();
+        text.setEditable(false);
         ((AbstractDocument) text.getDocument()).setDocumentFilter(new customDocumentFilter());
         doc = text.getDocument();
-        doc.addDocumentListener(new textareaMonitor());
-        scroll_bar = new JScrollPane();
+        
         
         JMenuBar menubar = new JMenuBar();
 
@@ -129,19 +214,23 @@ class editor2 extends JFrame implements ActionListener{
         frame.setJMenuBar(menubar);
         panel = new FileExplorer();
         panel.getPreferredSize();
+        scroll_bar = new JScrollPane(text);
+       
+        jSplitPane1 = new JSplitPane(SwingConstants.VERTICAL, panel, scroll_bar);
+        
+        jSplitPane1.setOneTouchExpandable(true);
+        jSplitPane1.setResizeWeight(0.02);
+       
         frame.setLayout(new BorderLayout());
-        frame.add(panel,BorderLayout.SOUTH);
-        frame.add(text);
-        frame.add(scroll_bar);
-        frame.setSize(1500,1200);
+      
+        frame.getContentPane().add(jSplitPane1,BorderLayout.CENTER);
+        frame.setSize(1000,800);
         frame.setVisible(true);
 
         text.setFont(text.getFont().deriveFont(28f));
 
-        //frame.addWindowListener(new WindowCloser());
+        realTimeStats();
     }
-    
-    
 
     public void actionPerformed(ActionEvent e){
         String s = e.getActionCommand();
@@ -190,7 +279,7 @@ class editor2 extends JFrame implements ActionListener{
                     File file = new File(choose_file.getSelectedFile().getAbsolutePath());
 
                     dir = file.getAbsolutePath();
-
+                    
                     panel.updateList(file);
 
                     JOptionPane.showMessageDialog(frame, "Currently in Project Directory: " + dir);
@@ -198,6 +287,41 @@ class editor2 extends JFrame implements ActionListener{
                     project = dir;
                     Opened_File = false;
                     text.setEditable(true);
+                    panel.updateList(file);
+
+                    JOptionPane.showMessageDialog(frame, "Currently in Project Directory: " + dir);
+
+                    project = dir;
+                    Opened_File = false;
+                    text.setEditable(true);
+                    
+                    Timer timer = new Timer();
+                    
+                    int begin = 0;
+                    int timeInterval = 3000;
+                    
+                    timer.schedule(new TimerTask() {
+                    	@Override
+                    	public void run()
+                    	{
+                    		
+                    		Arrays.fill(keywordsCountProject, 0);
+                    		
+                    		System.out.println("Hi i'm running");
+                    		
+                    		projectText = new ArrayList<String> ();
+    	                    
+        	                projectText = storeFilesForFolder(file, projectText);
+        	                    
+        	                    keyWordsProjectHelper(projectText);
+        	                    
+        	                    if(sf_Project == null)
+        	                    	sf_Project = new statsFrame(keywordsCountProject, keywords, "keywords total - Project");
+        	                    else if (sf_Project != null)
+        	                    	sf_Project.update(keywordsCountProject, keywords);
+                    	}
+                    }, begin, timeInterval);
+                    
                 }
                 else
                     JOptionPane.showMessageDialog(frame, "No File Is Opened");
@@ -443,8 +567,44 @@ class editor2 extends JFrame implements ActionListener{
                 evt.printStackTrace(); 
             } 
         }
+        // else if (s.equals("Keywords stats"))
+        // {
+        // 	if (sf == null)
+        // 		{sf = new statsFrame(keywordsCount, keywords);}
+        // 	else if (sf != null)
+        // 		{sf.updateFrame();}
+        // }
+        // else if (s.equals("Keywords stats - Project"))
+        // {
+        // 	if (sf_Project == null)
+        // 	{
+        // 		System.out.println("Hello");
+        // 		sf_Project = new statsFrame(keywordsCountProject, keywords);
+        // 	}
+        // 	else if (sf != null) 
+        // 	{sf_Project.updateFrame();}
+        // }
     }
-    
+
+    public void realTimeStats()
+    {        
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
+        Runnable task = new Runnable() {
+            public void run() {
+                if (sf == null)
+                    {sf = new statsFrame(keywordsCount, keywords, "keywords - File");}
+                else if (sf != null)
+                    {sf.updateFrame();}
+            }
+        };
+
+        int delay = 5;
+        scheduler.schedule(task, delay, TimeUnit.SECONDS);
+        scheduler.shutdown();
+    }
+
+
     public static void main(String[] argv){
 
         try {
@@ -462,8 +622,7 @@ class editor2 extends JFrame implements ActionListener{
     }
     
     final class customDocumentFilter extends DocumentFilter
-    {
-    	
+    {	
     	private final StyledDocument styledDocument = text.getStyledDocument();
     	private final StyleContext styleContext = StyleContext.getDefaultStyleContext();
     	
@@ -529,7 +688,11 @@ class editor2 extends JFrame implements ActionListener{
         	temp = temp.replace("\n", " ").replace("\r", "");
         	
         	
+        	String [] tempStringArray = temp.split("\\s+");
         	char [] tempCharArray = temp.toCharArray();
+        	
+        	// Pass the string array into the reserved word finder
+        	lookforKeywords(tempStringArray);
         	
         	// Look for matching substrings and highlight them
         	Matcher matcherBool = patternBool.matcher(temp);
@@ -578,9 +741,43 @@ class editor2 extends JFrame implements ActionListener{
         				}
         		}
         		
-        		// Another branch to check for strings while we're still in the loop
         		
         		
+        	}
+        	
+        }
+        
+        private void lookforKeywords(String [] text)
+        {
+        	// Helper array because we read in the text each time a character is added/deleted from the text
+        	int [] helpArray = new int [keywords.length];
+        	Arrays.fill(helpArray, 0);
+        	
+        	// Iterate through the string array and check with static keywords array through binary Search
+        	for (String word : text)
+        	{
+        		int index = Arrays.binarySearch(keywords, word);
+        		if (index >= 0) 
+        		{
+        			helpArray[index] += 1;
+        		}
+        		
+        	}
+        	
+        	// Use library to compare Arrays - if we detect a change then we set static bool to true, else it is false
+        	if (Arrays.equals(keywordsCount, helpArray) == true){change = false;}
+        	else
+        	{
+        		System.out.println("There was a change");
+        		change = true;
+        	}
+        	
+        	keywordsCount = helpArray;
+        	
+        	// If we detect a change then we should update the existing keywords count JFrame
+        	if (change == true && sf != null)
+        	{
+        		sf.update(keywordsCount, keywords);
         	}
         	
         }

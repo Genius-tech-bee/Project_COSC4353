@@ -81,7 +81,7 @@ class FileExplorer extends JPanel implements TreeSelectionListener {
     }
   
     public Dimension getPreferredSize(){
-      return new Dimension(400, 320);
+      return new Dimension(250, 320);
     }
   
     public void getList(DefaultMutableTreeNode node, File f) {

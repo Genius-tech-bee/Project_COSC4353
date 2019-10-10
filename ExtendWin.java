@@ -13,6 +13,9 @@ import javax.swing.tree.*;
 //import editorP.editor2.customDocumentFilter;
 
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -21,6 +24,19 @@ import javax.swing.event.TreeSelectionListener;
 
 class ExtendWin extends JFrame implements ActionListener{
     
+	static final String keywords[] = { "abstract", "assert", "boolean",
+            "break", "byte", "case", "catch", "char", "class", "const",
+            "continue", "default", "do", "double", "else", "extends", "false",
+            "final", "finally", "float", "for", "goto", "if", "implements",
+            "import", "instanceof", "int", "interface", "long", "native",
+            "new", "null", "package", "private", "protected", "public",
+            "return", "short", "static", "strictfp", "super", "switch",
+            "synchronized", "this", "throw", "throws", "transient", "true",
+            "try", "void", "volatile", "while" };
+    static int keywordsCount[] = new int [keywords.length];
+	static boolean change = false;
+    
+    statsFrame sf;
     JTextPane text;
     Document doc;
     JFrame frame;
@@ -53,7 +69,6 @@ class ExtendWin extends JFrame implements ActionListener{
         text = new JTextPane();
         ((AbstractDocument) text.getDocument()).setDocumentFilter(new customDocumentFilter());
         doc = text.getDocument();
-        doc.addDocumentListener(new textareaMonitor());
         scroll_bar = new JScrollPane();
 
         JMenuBar menubar = new JMenuBar();
@@ -122,10 +137,11 @@ class ExtendWin extends JFrame implements ActionListener{
         frame.setLayout(new BorderLayout());
         frame.add(text);
         frame.add(scroll_bar);
-        frame.setSize(1500,1200);
+        frame.setSize(1000,800);
         frame.setVisible(true);
 
         text.setFont(text.getFont().deriveFont(28f));
+        realTimeStats();
         try {
             String line ="", all_line = "";
 
@@ -350,7 +366,25 @@ class ExtendWin extends JFrame implements ActionListener{
             } 
         }
     }
+    
+    public void realTimeStats()
+    {        
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
+        Runnable task = new Runnable() {
+            public void run() {
+                if (sf == null)
+                    {sf = new statsFrame(keywordsCount, keywords, "keywords - File");}
+                else if (sf != null)
+                    {sf.updateFrame();}
+            }
+        };
+
+        int delay = 5;
+        scheduler.schedule(task, delay, TimeUnit.SECONDS);
+        scheduler.shutdown();
+    }
+    
     public void SaveFile(){
         File file = O_File;
         try{
@@ -431,6 +465,10 @@ class ExtendWin extends JFrame implements ActionListener{
             String temp = text.getText();
             temp = temp.replace("\n", " ");
         	char [] tempCharArray = temp.toCharArray();
+        	String [] tempStringArray = temp.split("\\s+");
+        	
+        	// Look for keywords within the textpane
+        	lookforKeywords(tempStringArray);
         	
         	// Look for matching substrings and highlight them
         	Matcher matcherBool = patternBool.matcher(temp);
@@ -475,6 +513,42 @@ class ExtendWin extends JFrame implements ActionListener{
         		// Another branch to check for strings while we're still in the loop
         		
         		
+        	}
+        	
+        	
+        }
+        
+        private void lookforKeywords(String [] text)
+        {
+        	// Helper array because we read in the text each time a character is added/deleted from the text
+        	int [] helpArray = new int [keywords.length];
+        	Arrays.fill(helpArray, 0);
+        	
+        	// Iterate through the string array and check with static keywords array through binary Search
+        	for (String word : text)
+        	{
+        		int index = Arrays.binarySearch(keywords, word);
+        		if (index >= 0) 
+        		{
+        			helpArray[index] += 1;
+        		}
+        		
+        	}
+        	
+        	// Use library to compare Arrays - if we detect a change then we set static bool to true, else it is false
+        	if (Arrays.equals(keywordsCount, helpArray) == true){change = false;}
+        	else
+        	{
+        		System.out.println("There was a change");
+        		change = true;
+        	}
+        	
+        	keywordsCount = helpArray;
+        	
+        	// If we detect a change then we should update the existing keywords count JFrame
+        	if (change == true && sf != null)
+        	{
+        		sf.update(keywordsCount, keywords);
         	}
         	
         }
