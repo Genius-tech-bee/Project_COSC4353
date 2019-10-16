@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.awt.event.*;
 import javax.swing.plaf.metal.*;
+import javax.swing.table.*;
 import javax.swing.UIManager.*;
 import javax.swing.JFrame;
 import javax.swing.text.*;
@@ -17,10 +18,13 @@ import java.util.Timer;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.swing.JSplitPane;
-import javax.swing.event.TreeSelectionEvent;
-import javax.swing.event.TreeSelectionListener;
+import java.util.ArrayList;
+import java.util.List;
+// import javax.swing.JSplitPane;
+// import javax.swing.event.TreeSelectionEvent;
+// import javax.swing.event.TreeSelectionListener;
 import java.util.concurrent.*;
+
 
 class editor2 extends JFrame implements ActionListener{
 	
@@ -32,8 +36,7 @@ class editor2 extends JFrame implements ActionListener{
 	 * 
 	 */
 	
-	private ArrayList<String> storeFilesForFolder (final File folder, ArrayList<String> projectText)
-	{
+	private ArrayList<String> storeFilesForFolder (final File folder, ArrayList<String> projectText){
 		for (final File fileEntry : folder.listFiles())
 		{
 			if (fileEntry.isDirectory())
@@ -87,29 +90,39 @@ class editor2 extends JFrame implements ActionListener{
 		
 	}
     
-	statsFrame sf;
-	statsFrame sf_Project;
-	ArrayList <String> projectText;
+	// statsFrame sf;
+	// statsFrame sf_Project;
+    ArrayList <String> projectText;
+    // Fiel for Main Frame and File Explorer
     JTextPane text;
     Document doc;
     JFrame frame;
     JScrollPane scroll_bar;
     JButton b1, b2, b3;
     FileExplorer panel;
-    boolean Opened_File = false;
     JSplitPane jSplitPane1;
-    
+    boolean Opened_File = false;
+
+    ///////////////////////////////////
+    // Field for Statitic Table
+    JTable tab;
+    JScrollPane scroll_barStatWindow;
+    JSplitPane jSplitPaneRight;
+    TableModel statTabModel;
+    List<String[]> values;
+    String[] columns;
     static final String keywords[] = { "abstract", "assert", "boolean",
-            "break", "byte", "case", "catch", "char", "class", "const",
-            "continue", "default", "do", "double", "else", "extends", "false",
-            "final", "finally", "float", "for", "goto", "if", "implements",
-            "import", "instanceof", "int", "interface", "long", "native",
-            "new", "null", "package", "private", "protected", "public",
-            "return", "short", "static", "strictfp", "super", "switch",
-            "synchronized", "this", "throw", "throws", "transient", "true",
-            "try", "void", "volatile", "while" };
-    static int keywordsCount[] = new int [keywords.length];
-    static int keywordsCountProject[] = new int [keywords.length];
+        "break", "byte", "case", "catch", "char", "class", "const",
+        "continue", "default", "do", "double", "else", "extends", "false",
+        "final", "finally", "float", "for", "goto", "if", "implements",
+        "import", "instanceof", "int", "interface", "long", "native",
+        "new", "null", "package", "private", "protected", "public",
+        "return", "short", "static", "strictfp", "super", "switch",
+        "synchronized", "this", "throw", "throws", "transient", "true",
+        "try", "void", "volatile", "while" };
+        static int keywordsCount[] = new int [keywords.length];
+        static int keywordsCountProject[] = new int [keywords.length];
+    //////////////////
     static boolean change = false;
     
     String direct = "";
@@ -117,6 +130,7 @@ class editor2 extends JFrame implements ActionListener{
     String file = "";
     File curFile;
     
+
     editor2()
     {
         frame = new JFrame("editor");
@@ -215,8 +229,15 @@ class editor2 extends JFrame implements ActionListener{
         panel = new FileExplorer();
         panel.getPreferredSize();
         scroll_bar = new JScrollPane(text);
-       
-        jSplitPane1 = new JSplitPane(SwingConstants.VERTICAL, panel, scroll_bar);
+     
+      
+
+        //Create a stat table and attach to splitpaneright
+        statTableCreate();
+    
+        
+        jSplitPane1 = new JSplitPane(SwingConstants.VERTICAL, panel, jSplitPaneRight);
+        
         
         jSplitPane1.setOneTouchExpandable(true);
         jSplitPane1.setResizeWeight(0.02);
@@ -226,10 +247,46 @@ class editor2 extends JFrame implements ActionListener{
         frame.getContentPane().add(jSplitPane1,BorderLayout.CENTER);
         frame.setSize(1000,800);
         frame.setVisible(true);
-
+      
         text.setFont(text.getFont().deriveFont(28f));
+      
+    }
+    public void statTableCreate(){
+        columns = new String[2];
+        values = new ArrayList<String[]>();
 
-        realTimeStats();
+        columns[0] = "Keywords";
+		columns[1] = "Frequency";
+        //keywordsCount, keywords
+           // Dimension minimumSize = new Dimension(50, 50);
+        // String[] []tableData = {{"If","4" },{"Else", "3"}};
+        // String [] collumnsName = {"keywrords", "Count"};
+        for (int i = 0 ; i < keywordsCount.length;i++){
+            if( keywordsCount[i] >0){
+            values.add(new String[] {keywords[i], String.valueOf(keywordsCount[i])} );
+            }
+        }
+        statTabModel = new DefaultTableModel(values.toArray(new Object[][] {}) , columns);
+        tab = new JTable(statTabModel);
+        tab.setFont(new Font("Serif", Font.PLAIN, 18));
+        scroll_barStatWindow = new JScrollPane(tab);
+        //tab.setMaximumSize(minimumSize);
+        jSplitPaneRight = new JSplitPane(SwingConstants.VERTICAL, scroll_bar,scroll_barStatWindow);
+        jSplitPaneRight.setOneTouchExpandable(true);
+        jSplitPaneRight.setDividerLocation(500);
+
+    }
+    public void updateStat(int [] keyCountArray, String [] keyArray){
+        values = new ArrayList<String[]>();
+
+        for (int i = 0 ; i < keyCountArray.length;i++){
+            if( keyCountArray[i] >0){
+            values.add(new String[] {keyArray[i], String.valueOf(keyCountArray[i])} );
+            }
+        }
+
+        statTabModel = new DefaultTableModel(values.toArray(new Object[][] {}) , columns);
+        tab.setModel(statTabModel);
     }
 
     public void actionPerformed(ActionEvent e){
@@ -300,27 +357,7 @@ class editor2 extends JFrame implements ActionListener{
                     int begin = 0;
                     int timeInterval = 3000;
                     
-                    timer.schedule(new TimerTask() {
-                    	@Override
-                    	public void run()
-                    	{
-                    		
-                    		Arrays.fill(keywordsCountProject, 0);
-                    		
-                    		System.out.println("Hi i'm running");
-                    		
-                    		projectText = new ArrayList<String> ();
-    	                    
-        	                projectText = storeFilesForFolder(file, projectText);
-        	                    
-        	                    keyWordsProjectHelper(projectText);
-        	                    
-        	                    if(sf_Project == null)
-        	                    	sf_Project = new statsFrame(keywordsCountProject, keywords, "keywords total - Project");
-        	                    else if (sf_Project != null)
-        	                    	sf_Project.update(keywordsCountProject, keywords);
-                    	}
-                    }, begin, timeInterval);
+                  
                     
                 }
                 else
@@ -567,42 +604,10 @@ class editor2 extends JFrame implements ActionListener{
                 evt.printStackTrace(); 
             } 
         }
-        // else if (s.equals("Keywords stats"))
-        // {
-        // 	if (sf == null)
-        // 		{sf = new statsFrame(keywordsCount, keywords);}
-        // 	else if (sf != null)
-        // 		{sf.updateFrame();}
-        // }
-        // else if (s.equals("Keywords stats - Project"))
-        // {
-        // 	if (sf_Project == null)
-        // 	{
-        // 		System.out.println("Hello");
-        // 		sf_Project = new statsFrame(keywordsCountProject, keywords);
-        // 	}
-        // 	else if (sf != null) 
-        // 	{sf_Project.updateFrame();}
-        // }
+      
     }
-
-    public void realTimeStats()
-    {        
-        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-
-        Runnable task = new Runnable() {
-            public void run() {
-                if (sf == null)
-                    {sf = new statsFrame(keywordsCount, keywords, "keywords - File");}
-                else if (sf != null)
-                    {sf.updateFrame();}
-            }
-        };
-
-        int delay = 5;
-        scheduler.schedule(task, delay, TimeUnit.SECONDS);
-        scheduler.shutdown();
-    }
+   
+   
 
 
     public static void main(String[] argv){
@@ -747,8 +752,7 @@ class editor2 extends JFrame implements ActionListener{
         	
         }
         
-        private void lookforKeywords(String [] text)
-        {
+        private void lookforKeywords(String [] text){
         	// Helper array because we read in the text each time a character is added/deleted from the text
         	int [] helpArray = new int [keywords.length];
         	Arrays.fill(helpArray, 0);
@@ -756,6 +760,7 @@ class editor2 extends JFrame implements ActionListener{
         	// Iterate through the string array and check with static keywords array through binary Search
         	for (String word : text)
         	{
+                word = word.toLowerCase();
         		int index = Arrays.binarySearch(keywords, word);
         		if (index >= 0) 
         		{
@@ -775,9 +780,9 @@ class editor2 extends JFrame implements ActionListener{
         	keywordsCount = helpArray;
         	
         	// If we detect a change then we should update the existing keywords count JFrame
-        	if (change == true && sf != null)
+        	if (change == true)
         	{
-        		sf.update(keywordsCount, keywords);
+                updateStat(keywordsCount,keywords);
         	}
         	
         }

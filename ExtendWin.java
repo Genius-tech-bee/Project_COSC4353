@@ -9,34 +9,46 @@ import javax.swing.UIManager.*;
 import javax.swing.text.*;
 import javax.swing.text.DocumentFilter.FilterBypass;
 import javax.swing.tree.*;
-
+import javax.swing.table.*;
 //import editorP.editor2.customDocumentFilter;
-
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
+import java.util.ArrayList;
+import java.util.List;
 
 class ExtendWin extends JFrame implements ActionListener{
     
-	static final String keywords[] = { "abstract", "assert", "boolean",
-            "break", "byte", "case", "catch", "char", "class", "const",
-            "continue", "default", "do", "double", "else", "extends", "false",
-            "final", "finally", "float", "for", "goto", "if", "implements",
-            "import", "instanceof", "int", "interface", "long", "native",
-            "new", "null", "package", "private", "protected", "public",
-            "return", "short", "static", "strictfp", "super", "switch",
-            "synchronized", "this", "throw", "throws", "transient", "true",
-            "try", "void", "volatile", "while" };
-    static int keywordsCount[] = new int [keywords.length];
+  // Field for Statitic Table
+  JTable tab;
+  JScrollPane scroll_barStatWindow;
+  JSplitPane jSplitPaneRight;
+  TableModel statTabModel;
+  List<String[]> values;
+  String[] columns;
+  static final String keywords[] = { "abstract", "assert", "boolean",
+      "break", "byte", "case", "catch", "char", "class", "const",
+      "continue", "default", "do", "double", "else", "extends", "false",
+      "final", "finally", "float", "for", "goto", "if", "implements",
+      "import", "instanceof", "int", "interface", "long", "native",
+      "new", "null", "package", "private", "protected", "public",
+      "return", "short", "static", "strictfp", "super", "switch",
+      "synchronized", "this", "throw", "throws", "transient", "true",
+      "try", "void", "volatile", "while" };
+      static int keywordsCount[] = new int [keywords.length];
+      static int keywordsCountProject[] = new int [keywords.length];
+  //////////////////
+
+	
+   
 	static boolean change = false;
     
-    statsFrame sf;
+    
     JTextPane text;
     Document doc;
     JFrame frame;
@@ -69,7 +81,7 @@ class ExtendWin extends JFrame implements ActionListener{
         text = new JTextPane();
         ((AbstractDocument) text.getDocument()).setDocumentFilter(new customDocumentFilter());
         doc = text.getDocument();
-        scroll_bar = new JScrollPane();
+        
 
         JMenuBar menubar = new JMenuBar();
 
@@ -133,15 +145,18 @@ class ExtendWin extends JFrame implements ActionListener{
         menubar.add(proj_menu);
 
         //frame.setDefaultCloseOperation(EXIT_ON_CLOSE);
+        scroll_bar = new JScrollPane(text);
+        //Create a stat table and attach to splitpaneright
+        statTableCreate();
         frame.setJMenuBar(menubar);
         frame.setLayout(new BorderLayout());
-        frame.add(text);
-        frame.add(scroll_bar);
+        
+        frame.getContentPane().add(jSplitPaneRight,BorderLayout.CENTER);
         frame.setSize(1000,800);
         frame.setVisible(true);
 
         text.setFont(text.getFont().deriveFont(28f));
-        realTimeStats();
+       
         try {
             String line ="", all_line = "";
 
@@ -167,6 +182,43 @@ class ExtendWin extends JFrame implements ActionListener{
         //frame.addWindowListener(new WindowCloser());
     }
 
+    public void statTableCreate(){
+        columns = new String[2];
+        values = new ArrayList<String[]>();
+
+        columns[0] = "Keywords";
+		columns[1] = "Frequency";
+        //keywordsCount, keywords
+           // Dimension minimumSize = new Dimension(50, 50);
+        // String[] []tableData = {{"If","4" },{"Else", "3"}};
+        // String [] collumnsName = {"keywrords", "Count"};
+        for (int i = 0 ; i < keywordsCount.length;i++){
+            if( keywordsCount[i] >0){
+            values.add(new String[] {keywords[i], String.valueOf(keywordsCount[i])} );
+            }
+        }
+        statTabModel = new DefaultTableModel(values.toArray(new Object[][] {}) , columns);
+        tab = new JTable(statTabModel);
+        tab.setFont(new Font("Serif", Font.PLAIN, 18));
+        scroll_barStatWindow = new JScrollPane(tab);
+        //tab.setMaximumSize(minimumSize);
+        jSplitPaneRight = new JSplitPane(SwingConstants.VERTICAL, scroll_bar,scroll_barStatWindow);
+        jSplitPaneRight.setOneTouchExpandable(true);
+        jSplitPaneRight.setDividerLocation(500);
+
+    }
+    public void updateStat(int [] keyCountArray, String [] keyArray){
+        values = new ArrayList<String[]>();
+
+        for (int i = 0 ; i < keyCountArray.length;i++){
+            if( keyCountArray[i] >0){
+            values.add(new String[] {keyArray[i], String.valueOf(keyCountArray[i])} );
+            }
+        }
+
+        statTabModel = new DefaultTableModel(values.toArray(new Object[][] {}) , columns);
+        tab.setModel(statTabModel);
+    }
     public void actionPerformed(ActionEvent e){
         String s = e.getActionCommand();
 
@@ -367,23 +419,8 @@ class ExtendWin extends JFrame implements ActionListener{
         }
     }
     
-    public void realTimeStats()
-    {        
-        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-
-        Runnable task = new Runnable() {
-            public void run() {
-                if (sf == null)
-                    {sf = new statsFrame(keywordsCount, keywords, "keywords - File");}
-                else if (sf != null)
-                    {sf.updateFrame();}
-            }
-        };
-
-        int delay = 5;
-        scheduler.schedule(task, delay, TimeUnit.SECONDS);
-        scheduler.shutdown();
-    }
+  
+   
     
     public void SaveFile(){
         File file = O_File;
@@ -527,6 +564,7 @@ class ExtendWin extends JFrame implements ActionListener{
         	// Iterate through the string array and check with static keywords array through binary Search
         	for (String word : text)
         	{
+                word = word.toLowerCase();
         		int index = Arrays.binarySearch(keywords, word);
         		if (index >= 0) 
         		{
@@ -546,9 +584,9 @@ class ExtendWin extends JFrame implements ActionListener{
         	keywordsCount = helpArray;
         	
         	// If we detect a change then we should update the existing keywords count JFrame
-        	if (change == true && sf != null)
+        	if (change == true)
         	{
-        		sf.update(keywordsCount, keywords);
+        		updateStat(keywordsCount,keywords);
         	}
         	
         }
