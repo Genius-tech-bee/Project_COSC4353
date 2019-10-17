@@ -245,10 +245,10 @@ class editor2 extends JFrame implements ActionListener{
         frame.setLayout(new BorderLayout());
       
         frame.getContentPane().add(jSplitPane1,BorderLayout.CENTER);
-        frame.setSize(1000,800);
+        frame.setSize(1200,800);
         frame.setVisible(true);
       
-        text.setFont(text.getFont().deriveFont(28f));
+        text.setFont(text.getFont().deriveFont(25f));
       
     }
     public void statTableCreate(){
@@ -273,7 +273,7 @@ class editor2 extends JFrame implements ActionListener{
         //tab.setMaximumSize(minimumSize);
         jSplitPaneRight = new JSplitPane(SwingConstants.VERTICAL, scroll_bar,scroll_barStatWindow);
         jSplitPaneRight.setOneTouchExpandable(true);
-        jSplitPaneRight.setDividerLocation(500);
+        jSplitPaneRight.setDividerLocation(650);
 
     }
     public void updateStat(int [] keyCountArray, String [] keyArray){

@@ -155,7 +155,7 @@ class ExtendWin extends JFrame implements ActionListener{
         frame.setSize(1000,800);
         frame.setVisible(true);
 
-        text.setFont(text.getFont().deriveFont(28f));
+        text.setFont(text.getFont().deriveFont(25f));
        
         try {
             String line ="", all_line = "";
@@ -204,7 +204,7 @@ class ExtendWin extends JFrame implements ActionListener{
         //tab.setMaximumSize(minimumSize);
         jSplitPaneRight = new JSplitPane(SwingConstants.VERTICAL, scroll_bar,scroll_barStatWindow);
         jSplitPaneRight.setOneTouchExpandable(true);
-        jSplitPaneRight.setDividerLocation(500);
+        jSplitPaneRight.setDividerLocation(700);
 
     }
     public void updateStat(int [] keyCountArray, String [] keyArray){
