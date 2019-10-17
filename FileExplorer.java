@@ -46,7 +46,7 @@ class FileExplorer extends JPanel implements TreeSelectionListener {
         DefaultMutableTreeNode node = (DefaultMutableTreeNode)
                         fileTree.getLastSelectedPathComponent();
                         
-        System.out.println(node);
+        //System.out.println(node);
 
         TreePath tp = e.getNewLeadSelectionPath();
 
@@ -78,6 +78,7 @@ class FileExplorer extends JPanel implements TreeSelectionListener {
                 JOptionPane.showMessageDialog(frame, node.getPath());
             
         }
+        fileTree.clearSelection();
     }
   
     public Dimension getPreferredSize(){
@@ -88,13 +89,13 @@ class FileExplorer extends JPanel implements TreeSelectionListener {
        if(!f.isDirectory()) {
            // We keep only JAVA source file for display in this HowTo
            if (f.getName().endsWith("java") || f.getName().endsWith("txt") || f.getName().endsWith("class")) {
-              System.out.println("FILE  -  " + f.getName());
+              //System.out.println("FILE  -  " + f.getName());
               DefaultMutableTreeNode child = new DefaultMutableTreeNode(f.getName());
               node.add(child);
             }
         }
        else {
-           System.out.println("DIRECTORY  -  " + f.getName());
+           //System.out.println("DIRECTORY  -  " + f.getName());
            DefaultMutableTreeNode child = new DefaultMutableTreeNode(f.getName());
            node.add(child);
            File fList[] = f.listFiles();

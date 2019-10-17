@@ -68,7 +68,7 @@ class ExtendWin extends JFrame implements ActionListener{
         int idex = fileName.lastIndexOf("\\");
         String delfileName = fileName.substring(0, idex + 1);
         fileName = fileName.replace(delfileName, "");
-        System.out.println(fileName);
+        //System.out.println(fileName);
 
         frame = new JFrame(fileName);
 
@@ -144,7 +144,7 @@ class ExtendWin extends JFrame implements ActionListener{
         menubar.add(edit_menu);
         menubar.add(proj_menu);
 
-        //frame.setDefaultCloseOperation(EXIT_ON_CLOSE);
+        frame.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         scroll_bar = new JScrollPane(text);
         //Create a stat table and attach to splitpaneright
         statTableCreate();
@@ -527,7 +527,7 @@ class ExtendWin extends JFrame implements ActionListener{
         		case '*':
         		case '/':
         		case '%':
-        			System.out.println(i);
+        			//System.out.println(i);
         			styledDocument.setCharacterAttributes(i ,1, arithmeticAttributeSet, false);
         			
         		}
@@ -577,7 +577,7 @@ class ExtendWin extends JFrame implements ActionListener{
         	if (Arrays.equals(keywordsCount, helpArray) == true){change = false;}
         	else
         	{
-        		System.out.println("There was a change");
+        		//System.out.println("There was a change");
         		change = true;
         	}
         	

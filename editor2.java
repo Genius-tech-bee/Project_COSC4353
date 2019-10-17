@@ -345,19 +345,11 @@ class editor2 extends JFrame implements ActionListener{
                     Opened_File = false;
                     text.setEditable(true);
                     panel.updateList(file);
-
-                    JOptionPane.showMessageDialog(frame, "Currently in Project Directory: " + dir);
-
-                    project = dir;
-                    Opened_File = false;
-                    text.setEditable(true);
                     
                     Timer timer = new Timer();
                     
                     int begin = 0;
                     int timeInterval = 3000;
-                    
-                  
                     
                 }
                 else
@@ -707,10 +699,10 @@ class editor2 extends JFrame implements ActionListener{
         		{
         		styledDocument.setCharacterAttributes(matcherBool.start(), matcherBool.end() - matcherBool.start(), booleanAttributeSet, false);
         		
-        		System.out.println("String is : " + temp.substring(matcherBool.start(), matcherBool.end()));
+        		//System.out.println("String is : " + temp.substring(matcherBool.start(), matcherBool.end()));
         		
-        		System.out.println("Matcher Boolean start location : " + matcherBool.start());
-        		System.out.println("Matcher Boolean end location : " + matcherBool.end());
+        		//System.out.println("Matcher Boolean start location : " + matcherBool.start());
+        		//System.out.println("Matcher Boolean end location : " + matcherBool.end());
         		}
         	
         	while (matcherQuotes.find())
@@ -773,7 +765,7 @@ class editor2 extends JFrame implements ActionListener{
         	if (Arrays.equals(keywordsCount, helpArray) == true){change = false;}
         	else
         	{
-        		System.out.println("There was a change");
+        		//System.out.println("There was a change");
         		change = true;
         	}
         	
