@@ -44,28 +44,17 @@ class editor2 extends JFrame implements ActionListener{
 			{
 				String absolutePath = fileEntry.getAbsolutePath();
 				File file = new File(absolutePath);
-				
 				try 
 				{
 					BufferedReader br = new BufferedReader(new FileReader(file));
 					String line;
 					String fileContents = "";
-					
 					while((line = br.readLine()) != null)
-					{
-						fileContents += line;
-					}
-					
+					{fileContents += line;}
 					projectText.add(fileContents);
 				} 
-				catch (FileNotFoundException e) 
-				{
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+				catch (FileNotFoundException e) {e.printStackTrace();} 
+				catch (IOException e) {e.printStackTrace();}
 			}
 		}
 		return projectText;
@@ -87,17 +76,7 @@ class editor2 extends JFrame implements ActionListener{
 		}
 		
 	}
-    
-    ArrayList <String> projectText;
-    JTextPane text;
-    Document doc;
-    JFrame frame;
-    JScrollPane scroll_bar;
-    JButton b1, b2, b3;
-    FileExplorer panel;
-    JSplitPane jSplitPane1;
-    boolean Opened_File = false;
-
+	
     ////////////////////////////////////////////////////////////////
     // Field for Statitic Table
     JTable tab;
@@ -117,9 +96,18 @@ class editor2 extends JFrame implements ActionListener{
         "try", "void", "volatile", "while" };
         static int keywordsCount[] = new int [keywords.length];
         static int keywordsCountProject[] = new int [keywords.length];
+        static boolean change = false;
     //////////////////////////////////////////////////////////////////
-    static boolean change = false;
     
+    ArrayList <String> projectText;
+    JTextPane text;
+    Document doc;
+    JFrame frame;
+    JScrollPane scroll_bar;
+    JButton b1, b2, b3;
+    FileExplorer panel;
+    JSplitPane jSplitPane1;
+    boolean Opened_File = false;    
     String direct = "";
     String project = "";
     String file = "";

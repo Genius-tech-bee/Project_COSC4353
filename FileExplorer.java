@@ -50,8 +50,8 @@ class FileExplorer extends JPanel implements TreeSelectionListener {
 
         TreePath tp = e.getNewLeadSelectionPath();
 
-        if (node == null)
-        //Nothing is selected.     
+      //Nothing is selected
+        if (node == null)     
             return;
         
         String direct = tp.toString();

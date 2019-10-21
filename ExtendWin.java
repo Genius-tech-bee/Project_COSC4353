@@ -43,12 +43,8 @@ class ExtendWin extends JFrame implements ActionListener{
       "try", "void", "volatile", "while" };
       static int keywordsCount[] = new int [keywords.length];
       static int keywordsCountProject[] = new int [keywords.length];
+      static boolean change = false;
   ///////////////////////////////////////////////////////////////////
-
-	
-   
-	static boolean change = false;
-    
     
     JTextPane text;
     Document doc;
@@ -56,7 +52,6 @@ class ExtendWin extends JFrame implements ActionListener{
     JScrollPane scroll_bar;
     JButton b1, b2, b3;
     File O_File;
-
     String direct = "";
     String project = "";
     String file = "";
