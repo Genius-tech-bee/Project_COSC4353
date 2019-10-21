@@ -1,4 +1,4 @@
-//package editorP;
+package editorP;
 
 import java.awt.*;
 import javax.swing.*;
@@ -23,7 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 class ExtendWin extends JFrame implements ActionListener{
-    
+	
+  /////////////////////////////////////////////////////////////////
   // Field for Statitic Table
   JTable tab;
   JScrollPane scroll_barStatWindow;
@@ -42,7 +43,7 @@ class ExtendWin extends JFrame implements ActionListener{
       "try", "void", "volatile", "while" };
       static int keywordsCount[] = new int [keywords.length];
       static int keywordsCountProject[] = new int [keywords.length];
-  //////////////////
+  ///////////////////////////////////////////////////////////////////
 
 	
    
@@ -547,9 +548,6 @@ class ExtendWin extends JFrame implements ActionListener{
         				}
         		}
         		
-        		// Another branch to check for strings while we're still in the loop
-        		
-        		
         	}
         	
         	
@@ -557,7 +555,6 @@ class ExtendWin extends JFrame implements ActionListener{
         
         private void lookforKeywords(String [] text)
         {
-        	// Helper array because we read in the text each time a character is added/deleted from the text
         	int [] helpArray = new int [keywords.length];
         	Arrays.fill(helpArray, 0);
         	
@@ -575,19 +572,13 @@ class ExtendWin extends JFrame implements ActionListener{
         	
         	// Use library to compare Arrays - if we detect a change then we set static bool to true, else it is false
         	if (Arrays.equals(keywordsCount, helpArray) == true){change = false;}
-        	else
-        	{
-        		//System.out.println("There was a change");
-        		change = true;
-        	}
+        	else{change = true;}
         	
         	keywordsCount = helpArray;
         	
         	// If we detect a change then we should update the existing keywords count JFrame
         	if (change == true)
-        	{
-        		updateStat(keywordsCount,keywords);
-        	}
+        	{updateStat(keywordsCount,keywords);}
         	
         }
     }

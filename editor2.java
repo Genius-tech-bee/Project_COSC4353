@@ -1,4 +1,4 @@
-//package editorP;
+package editorP;
 
 import java.awt.*;
 import javax.swing.*;
@@ -31,9 +31,7 @@ class editor2 extends JFrame implements ActionListener{
 	// Helper functions
 	/*
 	 * @param - File folder of the project and file contents Holder ArrayList
-	 * 
 	 * Functionality - returns an ArrayList of all the contents of the project
-	 * 
 	 */
 	
 	private ArrayList<String> storeFilesForFolder (final File folder, ArrayList<String> projectText){
@@ -72,7 +70,7 @@ class editor2 extends JFrame implements ActionListener{
 		}
 		return projectText;
 	}
-	
+
 	private void keyWordsProjectHelper(ArrayList<String> projectText)
 	{
 		for (String fileContent : projectText)
@@ -90,10 +88,7 @@ class editor2 extends JFrame implements ActionListener{
 		
 	}
     
-	// statsFrame sf;
-	// statsFrame sf_Project;
     ArrayList <String> projectText;
-    // Fiel for Main Frame and File Explorer
     JTextPane text;
     Document doc;
     JFrame frame;
@@ -103,7 +98,7 @@ class editor2 extends JFrame implements ActionListener{
     JSplitPane jSplitPane1;
     boolean Opened_File = false;
 
-    ///////////////////////////////////
+    ////////////////////////////////////////////////////////////////
     // Field for Statitic Table
     JTable tab;
     JScrollPane scroll_barStatWindow;
@@ -122,7 +117,7 @@ class editor2 extends JFrame implements ActionListener{
         "try", "void", "volatile", "while" };
         static int keywordsCount[] = new int [keywords.length];
         static int keywordsCountProject[] = new int [keywords.length];
-    //////////////////
+    //////////////////////////////////////////////////////////////////
     static boolean change = false;
     
     String direct = "";
@@ -134,7 +129,6 @@ class editor2 extends JFrame implements ActionListener{
     editor2()
     {
         frame = new JFrame("editor");
-
         Font f = new Font("sans-serif", Font.PLAIN, 25);
         UIManager.put("Menu.font", f);
         UIManager.put("MenuItem.font", f);
@@ -237,13 +231,10 @@ class editor2 extends JFrame implements ActionListener{
     
         
         jSplitPane1 = new JSplitPane(SwingConstants.VERTICAL, panel, jSplitPaneRight);
-        
-        
         jSplitPane1.setOneTouchExpandable(true);
         jSplitPane1.setResizeWeight(0.02);
        
         frame.setLayout(new BorderLayout());
-      
         frame.getContentPane().add(jSplitPane1,BorderLayout.CENTER);
         frame.setSize(1200,800);
         frame.setVisible(true);
@@ -251,6 +242,9 @@ class editor2 extends JFrame implements ActionListener{
         text.setFont(text.getFont().deriveFont(25f));
       
     }
+    
+    /* Functionality - Creates stat table (seen on the right)*/
+    
     public void statTableCreate(){
         columns = new String[2];
         values = new ArrayList<String[]>();
@@ -631,6 +625,8 @@ class editor2 extends JFrame implements ActionListener{
     	Pattern patternBool = buildPatternBool();
     	Pattern patternQuotes = buildPatternQuotes();
     	
+    	/* methods that monitor for changes in the document - each time a character is inserted or deleted -> calls handleTextChanged */
+    	
     	@Override
         public void insertString(FilterBypass fb, int offset, String text, AttributeSet attributeSet) throws BadLocationException {
             super.insertString(fb, offset, text, attributeSet);
@@ -681,29 +677,22 @@ class editor2 extends JFrame implements ActionListener{
         	styledDocument.setCharacterAttributes(0, text.getText().length(), blackAttributeSet, true);
         	
         	String temp = text.getText();
-        	
         	temp = temp.replace("\n", " ").replace("\r", "");
-        	
         	
         	String [] tempStringArray = temp.split("\\s+");
         	char [] tempCharArray = temp.toCharArray();
         	
         	// Pass the string array into the reserved word finder
+        	
         	lookforKeywords(tempStringArray);
         	
-        	// Look for matching substrings and highlight them
+        	// Look for matching substrings
+        	
         	Matcher matcherBool = patternBool.matcher(temp);
         	Matcher matcherQuotes = patternQuotes.matcher(temp);
         	
         	while (matcherBool.find())
-        		{
-        		styledDocument.setCharacterAttributes(matcherBool.start(), matcherBool.end() - matcherBool.start(), booleanAttributeSet, false);
-        		
-        		//System.out.println("String is : " + temp.substring(matcherBool.start(), matcherBool.end()));
-        		
-        		//System.out.println("Matcher Boolean start location : " + matcherBool.start());
-        		//System.out.println("Matcher Boolean end location : " + matcherBool.end());
-        		}
+        			styledDocument.setCharacterAttributes(matcherBool.start(), matcherBool.end() - matcherBool.start(), booleanAttributeSet, false);
         	
         	while (matcherQuotes.find())
         		styledDocument.setCharacterAttributes(matcherQuotes.start(), matcherQuotes.end() - matcherQuotes.start(), quoteAttributeSet, false);;
@@ -725,7 +714,6 @@ class editor2 extends JFrame implements ActionListener{
         		
         		// If conditional to check for || and && characters - we need to check for an extra character - this handles it
         		
-        		
         		if (tempCharArray[i] == '|' || tempCharArray[i] == '&')
         		{
         			if (i+1 < tempCharArray.length)
@@ -738,18 +726,15 @@ class editor2 extends JFrame implements ActionListener{
         				}
         		}
         		
-        		
-        		
         	}
         	
         }
         
         private void lookforKeywords(String [] text){
-        	// Helper array because we read in the text each time a character is added/deleted from the text
         	int [] helpArray = new int [keywords.length];
         	Arrays.fill(helpArray, 0);
         	
-        	// Iterate through the string array and check with static keywords array through binary Search
+        	// Iterate through the string array and check with static keywords array w/ binary search
         	for (String word : text)
         	{
                 word = word.toLowerCase();
@@ -763,19 +748,13 @@ class editor2 extends JFrame implements ActionListener{
         	
         	// Use library to compare Arrays - if we detect a change then we set static bool to true, else it is false
         	if (Arrays.equals(keywordsCount, helpArray) == true){change = false;}
-        	else
-        	{
-        		//System.out.println("There was a change");
-        		change = true;
-        	}
+        	else {change = true;}
         	
         	keywordsCount = helpArray;
         	
         	// If we detect a change then we should update the existing keywords count JFrame
         	if (change == true)
-        	{
-                updateStat(keywordsCount,keywords);
-        	}
+        	{updateStat(keywordsCount,keywords);}
         	
         }
     }

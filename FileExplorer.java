@@ -1,4 +1,4 @@
-//package editorP;
+package editorP;
 
 import java.awt.*;
 import javax.swing.*;
