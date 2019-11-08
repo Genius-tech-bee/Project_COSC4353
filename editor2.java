@@ -1,4 +1,4 @@
-package editorP;
+//package editorP;
 
 import java.awt.*;
 import javax.swing.*;
@@ -10,7 +10,6 @@ import java.awt.event.*;
 import javax.swing.plaf.metal.*;
 import javax.swing.table.*;
 import javax.swing.UIManager.*;
-import javax.swing.JFrame;
 import javax.swing.text.*;
 import javax.swing.tree.*;
 import java.util.*;
@@ -20,10 +19,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.ArrayList;
 import java.util.List;
-// import javax.swing.JSplitPane;
-// import javax.swing.event.TreeSelectionEvent;
-// import javax.swing.event.TreeSelectionListener;
 import java.util.concurrent.*;
+import java.lang.*;
+import java.lang.management.ManagementFactory;
+import java.lang.reflect.Method;
 
 
 class editor2 extends JFrame implements ActionListener{
@@ -98,7 +97,16 @@ class editor2 extends JFrame implements ActionListener{
         static int keywordsCountProject[] = new int [keywords.length];
         static boolean change = false;
     //////////////////////////////////////////////////////////////////
-    
+
+    ///////////////////////////////////////////////////////////////////
+    //Fields for Class/Method Table (bottom panel)
+    JTable classMethodTab;
+    JScrollPane scroll_barClassMethodWindow;
+    TableModel classMethodTabModel;
+    List<String[]> classMethodValues;
+    String[] classMethodColumns;
+    /////////////////////////////////////////////////////////////////////
+
     ArrayList <String> projectText;
     JTextPane text;
     Document doc;
@@ -127,7 +135,6 @@ class editor2 extends JFrame implements ActionListener{
         text.setEditable(false);
         ((AbstractDocument) text.getDocument()).setDocumentFilter(new customDocumentFilter());
         doc = text.getDocument();
-        
         
         JMenuBar menubar = new JMenuBar();
 
@@ -211,11 +218,12 @@ class editor2 extends JFrame implements ActionListener{
         panel = new FileExplorer();
         panel.getPreferredSize();
         scroll_bar = new JScrollPane(text);
-     
-      
 
         //Create a stat table and attach to splitpaneright
         statTableCreate();
+
+        //Create a class/method table and attach to splitpane
+        classMethodTableCreate();
     
         
         jSplitPane1 = new JSplitPane(SwingConstants.VERTICAL, panel, jSplitPaneRight);
@@ -224,11 +232,34 @@ class editor2 extends JFrame implements ActionListener{
        
         frame.setLayout(new BorderLayout());
         frame.getContentPane().add(jSplitPane1,BorderLayout.CENTER);
+        frame.getContentPane().add(scroll_barClassMethodWindow, BorderLayout.SOUTH);
         frame.setSize(1200,800);
         frame.setVisible(true);
       
         text.setFont(text.getFont().deriveFont(25f));
       
+    }
+
+    public void classMethodTableCreate()
+    {
+        classMethodColumns = new String[2];
+        classMethodValues = new ArrayList<String[]>();
+
+        classMethodColumns[0] = "Classes";
+		classMethodColumns[1] = "Methods";
+     
+        classMethodTabModel = new DefaultTableModel(classMethodValues.toArray(new Object[][] {}) , classMethodColumns);
+        classMethodTab = new JTable(classMethodTabModel);
+        classMethodTab.setFont(new Font("Serif", Font.PLAIN, 18));
+        scroll_barClassMethodWindow = new JScrollPane(classMethodTab, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+                                        JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scroll_barClassMethodWindow.setPreferredSize(new Dimension(1200, 100));
+    }
+
+    public void updateClassMethods(){
+
+        classMethodTabModel = new DefaultTableModel(classMethodValues.toArray(new Object[][] {}) , classMethodColumns);
+        classMethodTab.setModel(classMethodTabModel);
     }
     
     /* Functionality - Creates stat table (seen on the right)*/
@@ -239,20 +270,17 @@ class editor2 extends JFrame implements ActionListener{
 
         columns[0] = "Keywords";
 		columns[1] = "Frequency";
-        //keywordsCount, keywords
-           // Dimension minimumSize = new Dimension(50, 50);
-        // String[] []tableData = {{"If","4" },{"Else", "3"}};
-        // String [] collumnsName = {"keywrords", "Count"};
+        
         for (int i = 0 ; i < keywordsCount.length;i++){
             if( keywordsCount[i] >0){
             values.add(new String[] {keywords[i], String.valueOf(keywordsCount[i])} );
             }
         }
-        statTabModel = new DefaultTableModel(values.toArray(new Object[][] {}) , columns);
+        classMethodTabModel = new DefaultTableModel(values.toArray(new Object[][] {}) , columns);
         tab = new JTable(statTabModel);
         tab.setFont(new Font("Serif", Font.PLAIN, 18));
         scroll_barStatWindow = new JScrollPane(tab);
-        //tab.setMaximumSize(minimumSize);
+        
         jSplitPaneRight = new JSplitPane(SwingConstants.VERTICAL, scroll_bar,scroll_barStatWindow);
         jSplitPaneRight.setOneTouchExpandable(true);
         jSplitPaneRight.setDividerLocation(650);
@@ -570,8 +598,61 @@ class editor2 extends JFrame implements ActionListener{
                     int file_i = direct.lastIndexOf("\\") + 1;
                     String file_name = direct.substring(file_i, file_ie);
                     String file_dir = direct.substring(0, file_i);
+        
                     String command = String.format("cmd /c start cmd.exe /K \"pushd %s && java %s\"", file_dir, file_name);
-                    Runtime.getRuntime().exec(command);
+                    String commandClass = String.format("cmd /c start cmd.exe /c \"pushd %s && java -verbose %s > classes.txt\"", file_dir, file_name);
+                   
+                    Runtime rT = Runtime.getRuntime();
+                    rT.exec(command);
+                    Process p = Runtime.getRuntime().exec(commandClass);
+
+                    p.waitFor();
+
+                    Thread.sleep(500);
+
+                    String classFileDir = direct.substring(0, file_i);
+                    String classFileDir2 = classFileDir.replace("\\", "/");
+                    String classFileStr = classFileDir + "classes.txt";
+                    System.out.println(classFileDir);
+                    System.out.println(classFileDir2);
+                    classMethodValues = new ArrayList<String[]>();
+
+                    try {
+                        File classesFile = new File(classFileStr); 
+                        Scanner sc = new Scanner(classesFile); 
+                    
+                        while (sc.hasNextLine())
+                        {
+                            String line = sc.nextLine();
+                            if (line.contains(classFileDir2) && line.contains("Loaded"))
+                            {
+                                String tempStr = line.substring(8, line.length());
+                                String className = "";
+
+                                for (int i = 0; i < tempStr.length(); i++)
+                                {
+                                    if(tempStr.charAt(i) == ' ')
+                                    {
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        className += tempStr.charAt(i);
+                                    }
+                                }
+
+                                classMethodValues.add(new String[] {className, ""});
+                            }
+                        }
+
+                        updateClassMethods();
+
+                        sc.close();
+                    } 
+                    catch (FileNotFoundException fnfe)
+                    {
+                        fnfe.printStackTrace();
+                    }
                 }
             }
             catch (Exception evt){ 
